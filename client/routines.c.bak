@@ -1,0 +1,87 @@
+#include "routines.h"
+
+void *receptr_rtn(void *arg)
+{
+  int fd = *(int *) arg;
+
+loop:;
+    // printf("waiting for message\n");
+     ssize_t nbytes;
+     char msgbuf[MSGBUFSZ] = {0};
+     while((nbytes = recv(fd,msgbuf,MSGBUFSZ,0)) > 0){
+       char m[nbytes+12];
+       strcpy(m,"\033[1;33m");
+       strcat(m,msgbuf);
+       strcat(m,"\033[0m");
+       if(write(STDOUT_FILENO,m,strlen(m)) != strlen(m))
+	 perror("write");
+       memset(msgbuf,0,MSGBUFSZ);
+     }
+     if(nbytes == 0){
+       printf("Server  closed\n");
+       exit(0);
+     }
+
+     //printf("2 waiting for message\n");
+     goto loop;
+}
+
+void *messengr_rtn(void *arg)
+{
+  /*
+   * "msgsz:sz\nto:addr\nfrom:uid\ntime:\nmsg:\n"
+   */
+  
+  struct msgarg marg = *(struct msgarg *)arg;
+
+loop:;
+     char msgbuf[MSGBUFSZ] = {0};
+     struct addrinfo *info;
+     char msg[MSGSZ] = {0};
+     char port[50]={0};
+     ssize_t nbytes;
+     time_t tim;
+     char num[100]={0};
+     printf("\r\n ");
+     if((nbytes = read(STDIN_FILENO,msg,MSGSZ)) < 0)
+       perror("read");
+     strcpy(msgbuf,"msgsz:");
+     snprintf(num,100,"%ld",nbytes);
+     strcat(msgbuf,num);
+     strcat(msgbuf,"\nto:");
+
+     int err;
+     printf("RECIPIENT: ");
+     fgets(port,50,stdin);
+    // printf("port: %s\n",port);
+     //printf("len: %zu\n",strlen(port));
+     //port[strlen(port)]= '\0';
+     char *p = strtok(port,"\n");
+     //printf("p: %s\n",p);
+     //printf("len: %zu\n",strlen(p));
+     if((err=getaddr("127.0.0.1",p,&info)) != 0){
+       puts((char*) gai_strerror(err));
+       goto loop;
+     }
+
+
+
+
+
+     strcat(msgbuf,info->ai_addr->sa_data);
+     //printf("after writing to msgbuf\n");
+     strcat(msgbuf,"\nfrom:");
+     memset(num,0,sizeof(num));
+     snprintf(num,100,"%u",marg.user.uid);
+     strcat(msgbuf,num);
+     strcat(msgbuf,"\ntime:");
+     time(&tim);
+     snprintf(num,100,"%lu",tim);
+     strcat(msgbuf,num);
+     strcat(msgbuf,"\nmsg:");
+     strcat(msgbuf,msg);
+
+     if(send(marg.fildes,msgbuf,strlen(msgbuf),0) <0)
+       perror("send");
+     goto loop;
+} 

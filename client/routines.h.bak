@@ -1,0 +1,26 @@
+#ifndef _ROUTINES_H
+#define _ROUTINES_H
+
+#include <pthread.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <signal.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <time.h>
+#include <netinet/in.h>
+#include "unsdb.h"
+#include "address.h"
+
+#define MSGSZ 1024
+#define MSGBUFSZ 4096
+
+struct msgarg {
+  int fildes;
+  struct uns user;
+};
+
+void *messengr_rtn(void *arg);
+void *receptr_rtn(void *arg);
+
+#endif
