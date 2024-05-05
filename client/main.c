@@ -11,7 +11,7 @@
 #include "routines.h"
 #include "err.h"
 
-//global variables
+//GLOBAL VARIABLES
 struct uns *user;
 struct sockaddr_in *addr;
 int clientfd;
@@ -24,8 +24,7 @@ int main(int argc, char *argv[])
   setvbuf(stderr,NULL,_IONBF,0);
   setvbuf(stdout,NULL,_IONBF,0);
   setvbuf(stdin,NULL,_IONBF,0);
-  struct addrinfo *ainfo,*aip;
-  struct addrinfo *cai,*caip;
+  struct addrinfo *ainfo,*aip,*cai,*caip;
   struct msgarg marg;
   int retval, err;
   sigset_t sigmask;
@@ -34,10 +33,11 @@ int main(int argc, char *argv[])
   sigdelset(&sigmask,SIGINT);
   auth();
 
+  //SERVER ADDRESS
   if((err = getaddr("127.0.0.1","1024",&ainfo)) < 0)
     err_user((char *) gai_strerror(err));
 
-    //client address
+    //CLIENT ADDRESS
     if((err = getaddr("127.0.0.1",argv[1],&cai)) < 0)
       err_user((char *) gai_strerror(err));
 
@@ -78,19 +78,15 @@ int main(int argc, char *argv[])
     FD_SET(STDIN_FILENO,&rdset);
     FD_SET(clientfd,&rdset);
     retval = pselect(clientfd+1,&rdset,NULL,NULL,NULL,&sigmask);
-    switch(retval){
-      case -1:;
-      case 0:
-	break;
-      default:
-	if(FD_ISSET(STDIN_FILENO,&rdset) && FD_ISSET(clientfd,&rdset)){
-	  receptr_rtn(clientfd);
-	  messengr_rtn(marg);
-	}else if(FD_ISSET(clientfd,&rdset)){
-	  receptr_rtn(clientfd);
-	}else {
-	  messengr_rtn(marg);
-	}
+    if(retval != -1 && retval != 0){
+      if(FD_ISSET(STDIN_FILENO,&rdset) && FD_ISSET(clientfd,&rdset)){
+	receptr_rtn(clientfd);
+	messengr_rtn(marg);
+      }else if(FD_ISSET(clientfd,&rdset)){
+	receptr_rtn(clientfd);
+      }else {
+	messengr_rtn(marg);
+      }
     }
   }
 }
